@@ -1,0 +1,34 @@
+cd ~/Projekte/AI-Sequencer
+source venv/bin/activate
+python ai_oxi_evolving_jam.py \
+  --seed "0,2,4,1,6,2,4,2" \
+  --seed-mode degree \
+  --root C4 \
+  --mode dorian \
+  --voices 4 \
+  --bpm 96 \
+  --bars 4 \
+  --port "IAC-Treiber Bus 1" \
+  --prefetch 1 \
+  --rest-amount 0.3 \
+  --channel-divs 4,8,16,4 \
+  --mutation 0.4
+
+
+cd ~/Projekte/AI-Sequencer
+source venv/bin/activate
+python ai_oxi_evolving_jam_prompted.py \
+  --root G3 \
+  --seed "0,2,4,1,6,2,4,2" \
+  --mode dorian \
+  --voices 4 \
+  --bpm 96 \
+  --bars 8 \
+  --port "IAC-Treiber Bus 1" \
+  --prefetch 1 \
+  --rest-amount 0.5 \
+  --channel-divs 4,8,16,2 \
+  --mutation 0.5
+
+  source venv/bin/activate
+python ai_oxi_evolving_jam_prompted.py --bars 24 --channel-divs 4,16,4,8  --bpm 60 --seed 0,3,5,7,10,7,5,3  --rest-amount 0.4 --root D3 --rest-amount 0.3

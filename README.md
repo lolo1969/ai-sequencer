@@ -1,4 +1,4 @@
-# AI OXI Evolving Jam Prompted
+# AI Evolving Jam Prompted
 
 This project is an AI-based MIDI sequencer that automatically generates and evolves musical patterns using OpenAI. The patterns are output via MIDI and can be further processed in Ableton or hardware sequencers.
 
@@ -23,13 +23,13 @@ pip install openai mido python-rtmidi
 2. **Start the script:**  
    Change to the project directory and start the script:
    ```bash
-   python3 ai_oxi_evolving_jam_prompted.py
+   python3 ai_evolving_jam_prompted.py
    ```
 
 3. **Parameters (optional):**  
    You can control the behavior via CLI parameters, e.g.:
    ```bash
-   python3 ai_oxi_evolving_jam_prompted.py --voices 3 --bpm 120 --bars 4 --mode Dorian --root C4
+   python3 ai_evolving_jam_prompted.py --voices 3 --bpm 120 --bars 4 --mode Dorian --root C4
    ```
    Without parameters, the AI determines suitable initial values based on the prompt.
 
@@ -55,7 +55,7 @@ pip install openai mido python-rtmidi
 You can set the clock divisions for each channel directly via the `--channel-divs` parameter.  
 Example:  
 ```bash
-python3 ai_oxi_evolving_jam_prompted.py --channel-divs "4,8,16,8"
+python3 ai_evolving_jam_prompted.py --channel-divs "4,8,16,8"
 ```
 This means:
 - Channel 1 plays quarter notes (4)
