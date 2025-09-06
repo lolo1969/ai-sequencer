@@ -29,3 +29,6 @@ python ai_oxi_evolving_jam_prompted.py \
   --rest-amount 0.5 \
   --channel-divs 4,8,16,2 \
   --mutation 0.5
+
+  source venv/bin/activate
+python ai_oxi_evolving_jam_prompted.py --bars 24 --channel-divs 4,16,4,8  --bpm 60 --seed 0,3,5,7,10,7,5,3  --rest-amount 0.4 --root D3 --rest-amount 0.3
