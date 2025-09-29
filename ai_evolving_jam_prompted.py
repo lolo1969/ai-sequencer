@@ -30,15 +30,15 @@ HUMANIZE_T     = 0.006
 MODEL_NAME     = "gpt-4o-mini"
 TEMPERATURE    = 0.6
 MUTATION_AMOUNT = 0.35
-SCENE_HOLD_LOOPS = 4         # vorher: 12
-MICRO_CHANGE_FRACTION = 0.3  # vorher: 0.05
+SCENE_HOLD_LOOPS = 4         # previously: 12
+MICRO_CHANGE_FRACTION = 0.3  # previously: 0.05
 PITCH_STEP_LIMIT = 1
 LOCK_STARTS = True
 
 STYLE_PROMPT = (
-    "Erzeuge hypnotische, minimalistische Patterns im Stil von Caterina Barbieri: "
-    "Repetition mit subtilen Variationen und polyrhythmischen Überlagerungen. "
-    "Keine Drums, nur Noten (Pitch/Gate)."
+    "Generate hypnotic, minimalist patterns in the style of Caterina Barbieri: "
+    "Repetition with subtle variations and polyrhythmic overlays. "
+    "No drums, only notes (Pitch/Gate)."
 )
 
 # ================================
@@ -52,6 +52,8 @@ SCALE_STEPS = {
     "mixolydian":  [0,2,4,5,7,9,10],
     "aeolian":     [0,2,3,5,7,8,10],
     "locrian":     [0,1,3,5,6,8,10],
+    "maqam hijaz": [0,1,4,5,7,8,11],  # Added: Maqam Hijaz
+    "maqam hijaz kar": [0,1,4,5,7,8,11],  # Already present
 }
 SCALE_ALIASES = {"major":"ionian","minor":"aeolian"}
 
@@ -67,7 +69,7 @@ def note_to_midi(s):
         return int(s)
     m = re.fullmatch(r"([A-Ga-g][#b]?)(-?\d+)", s)
     if not m:
-        raise ValueError(f"Ungültiger Root: {s}")
+        raise ValueError(f"Invalid root: {s}")
     name = m.group(1).lower()
     octv = int(m.group(2))
     sem  = NOTE_TO_SEMITONE[name]
@@ -106,8 +108,8 @@ def mutate_seed(seed_notes, mut, fraction=MICRO_CHANGE_FRACTION):
     out = []
     k = max(1, int(len(seed_notes) * fraction))
     idx_to_edit = set(random.sample(range(len(seed_notes)), k))
-    # Debug-Ausgabe: Zeige wie viele Noten mutiert werden
-    print(f"[DEBUG] Mutiere {len(idx_to_edit)} von {len(seed_notes)} Noten (Mutation={mut}, Fraction={fraction})")
+    # Debug output: Show how many notes are mutated
+    print(f"[DEBUG] Mutating {len(idx_to_edit)} of {len(seed_notes)} notes (Mutation={mut}, Fraction={fraction})")
     for i, n in enumerate(seed_notes):
         note = dict(n)
         if i in idx_to_edit:
@@ -151,7 +153,6 @@ def build_seed_from_sequence(seq, root_midi, mode_name, seed_mode="degree",
             root_for_channel = root_midi - 24  # two octaves down
         else:
             root_for_channel = root_midi
-        # ...existing code...
         # (rest unchanged, just use root_for_channel below)
         step_dur_ch = channel_step_durs[ch_i] if channel_step_durs else step_dur
         max_beats = loop_beats if loop_beats else 8.0
@@ -325,20 +326,20 @@ def request_initial_params():
 def open_midi_out(preferred=None):
     names = mido.get_output_names()
     if names:
-        print("Gefundene MIDI-Out-Ports:\n - " + "\n - ".join(names))
+        print("Found MIDI-Out ports:\n - " + "\n - ".join(names))
     else:
-        print("Keine MIDI-Out-Ports gefunden.")
+        print("No MIDI-Out ports found.")
     if preferred and preferred in names:
-        print(f"Öffne: {preferred}")
+        print(f"Opening: {preferred}")
         return mido.open_output(preferred)
     for key in ("IAC", "IAC Driver", "IAC-Treiber", "Loop", "Virtual"):
         matches = [n for n in names if key.lower() in n.lower()]
         if matches:
-            print(f"Öffne (Match '{key}'): {matches[0]}")
+            print(f"Opening (Match '{key}'): {matches[0]}")
             return mido.open_output(matches[0])
     fallback_name = "AI Sequencer Out"
-    print(f"Kein passender Port → erstelle virtuellen Port: '{fallback_name}'")
-    print("Hinweis: In Ableton diesen Port als MIDI-Eingang aktivieren (Preferences → Link/MIDI).")
+    print(f"No matching port → creating virtual port: '{fallback_name}'")
+    print("Note: In Ableton, enable this port as a MIDI input (Preferences → Link/MIDI).")
     return mido.open_output(fallback_name, virtual=True)
 
 def reset_all_notes(midi_out):
@@ -477,7 +478,7 @@ def main():
     p.add_argument("--channel-roots", type=str, default=None,
                    help="Kommagetrennte Root-Noten pro Kanal, z.B. 'C2,G3,E4,C3'")
     p.add_argument("--seed-rng", type=int, default=None, help="Deterministische Random-Seed")
-    p.add_argument("--temperature", type=float, default=TEMPERATURE, help="Temperatur für KI (0.0-2.0)")
+    p.add_argument("--temperature", type=float, default=TEMPERATURE, help="Temperatur for AI (0.0-2.0)")
     args = p.parse_args()
 
     # validate
@@ -490,7 +491,7 @@ def main():
     if args.seed_rng is not None:
         random.seed(args.seed_rng)
 
-    # ask KI for defaults if nothing provided
+    # KI-Parameter holen, falls keine CLI-Argumente übergeben wurden
     if (args.seed is None and args.root is None and args.mode is None and
         args.voices is None and args.bpm is None and args.bars is None):
         print("[INFO] Keine Parameter übergeben – KI bestimmt sinnvolle Startparameter ...")
@@ -508,13 +509,28 @@ def main():
         # NEU: Seed von KI holen, sonst Default
         seed_str = ki_params.get("seed", "0,2,4,1,6,2,4,2")
     else:
+        # Standardwerte aus dem Prompt anwenden
+        ki_params = request_initial_params()
+        BPM       = ki_params.get("bpm", BPM)
+        LOOP_BARS = ki_params.get("bars", LOOP_BARS)
+        VOICES    = ki_params.get("voices", VOICES)
+        USE_CHANNELS[:] = [1,2,3,4][:VOICES]
+        GLOBAL_KEY  = ki_params.get("key", GLOBAL_KEY)
+        GLOBAL_MODE = ki_params.get("mode", GLOBAL_MODE)
+        if "root" in ki_params and re.match(r"^[A-Ga-g][#b]?-?\d+$", str(ki_params["root"])):
+            root_str = ki_params["root"]
+        else:
+            root_str = f"{GLOBAL_KEY}4"
+        seed_str = ki_params.get("seed", "0,2,4,1,6,2,4,2")
+
+        # CLI-Argumente überschreiben die Werte aus dem Prompt
         BPM       = args.bpm if args.bpm is not None else BPM
         LOOP_BARS = args.bars if args.bars is not None else LOOP_BARS
         VOICES    = clamp(args.voices, 1, 4) if args.voices is not None else VOICES
         USE_CHANNELS[:] = [1,2,3,4][:VOICES]
         GLOBAL_MODE = args.mode if args.mode is not None else GLOBAL_MODE
-        root_str    = args.root if args.root is not None else f"{GLOBAL_KEY}4"
-        seed_str    = args.seed if args.seed is not None else "0,2,4,1,6,2,4,2"
+        root_str    = args.root if args.root is not None else root_str
+        seed_str    = args.seed if args.seed is not None else seed_str
 
     MUTATION_AMOUNT = clamp(args.mutation, 0.0, 1.0)
     TEMPERATURE = clamp(args.temperature, 0.0, 2.0)
@@ -637,7 +653,7 @@ def main():
                         if cand:
                             next_notes = cand
                     except Exception as e:
-                        print("KI-Abruf fehlgeschlagen – spiele identisch weiter:", e)
+                        print("AI request failed – playing identical pattern:", e)
 
             events = schedule_events(next_notes, BPM)
             t0 = time.monotonic()
@@ -656,9 +672,14 @@ def main():
                 stop_ev.set(); stop_ev.clear()
 
     except KeyboardInterrupt:
-        print("\n[INFO] Abbruch – alle Gates schließen.")
+        print("\n[INFO] Interrupted – closing all gates.")
         reset_all_notes(out)
         # out.close()  # optional
+
+    finally:
+        # Ensure all gates are closed
+        reset_all_notes(out)
+        print("[INFO] All MIDI gates have been closed.")
 
 
 if __name__ == "__main__":
