@@ -45,10 +45,19 @@ pip install openai mido python-rtmidi
 | `--seed`          | str      | Initial seed as a sequence of numbers (e.g., note intervals)                                | `--seed "0,2,4,1,6,2,4,2"`      |
 | `--seed-mode`     | str      | Interpretation of the seed: `degree` (scale degree) or `semitone` (semitone)                | `--seed-mode degree`            |
 | `--port`          | str      | Name of the MIDI output port                                                                | `--port "IAC Driver Bus 1"`     |
+| `--select-device` | flag     | Shows interactive MIDI device selection menu                                                | `--select-device`               |
 | `--prefetch`      | int      | 1=enable AI prefetch, 0=disable                                                             | `--prefetch 1`                  |
 | `--rest-amount`   | float    | Probability of rests (0.0-1.0)                                                              | `--rest-amount 0.15`            |
 | `--send-clock`    | int      | Send MIDI clock/start: 1=on, 0=off                                                          | `--send-clock 1`                |
 | `--channel-divs`  | str      | Comma-separated note divisions per channel (e.g., '4,8,16,8' for quarter, eighth, etc.)     | `--channel-divs "4,8,16,8"`     |
+| `--mutation`      | float    | Mutation strength for pattern evolution (0.0-1.0)                                           | `--mutation 0.35`               |
+| `--fraction`      | float    | Fraction of notes to potentially mutate per loop (0.0-1.0)                                  | `--fraction 0.3`                |
+| `--channel-roots` | str      | Comma-separated root notes per channel                                                      | `--channel-roots "C2,G3,E4,C3"` |
+| `--seed-rng`      | int      | Deterministic random seed for reproducibility                                               | `--seed-rng 42`                 |
+| `--temperature`   | float    | AI temperature for creativity (0.0-2.0)                                                     | `--temperature 0.6`             |
+| `--arrangement`   | str      | Arrangement mode: off, build, wave, random, subtract                                        | `--arrangement build`           |
+| `--arr-loops`     | int      | Number of loops per arrangement stage                                                       | `--arr-loops 4`                 |
+| `--gate-length`   | float    | Gate length as ratio of step duration (0.1-1.0)                                             | `--gate-length 0.9`             |
 
 ## Note on Clock Divisions per Channel
 
@@ -68,7 +77,21 @@ The divisions are controlled directly via the parameter and are considered in th
 
 4. **MIDI Setup:**  
    The script automatically opens a suitable MIDI output port.  
-   In Ableton or your DAW, activate the port as a MIDI input.
+   
+   **Interactive Device Selection:**
+   - Use `--select-device` to get an interactive menu showing all available MIDI ports
+   - You can then choose from:
+     - Available hardware MIDI devices
+     - Virtual MIDI ports (e.g., IAC Driver on macOS)
+     - Option to create a new virtual port
+   
+   **Automatic Selection:**
+   - Without `--select-device`, the script will automatically select a suitable port
+   - First tries the port specified with `--port` parameter
+   - Then looks for common virtual ports (IAC Driver, Loop, Virtual)
+   - Finally creates a new virtual port if none found
+   
+   In Ableton or your DAW, activate the chosen port as a MIDI input.
 
 5. **AI Generation:**  
    The AI continuously generates new patterns that subtly evolve.  
